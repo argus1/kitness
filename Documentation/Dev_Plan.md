@@ -2,11 +2,11 @@
 
 ## 1. Project Goal
 
-Build a reproducible bioinformatics workflow to compare collagen-related genomic variation between two cat breeds, Rag Doll and Maine Coon, against a human reference and the domestic cat reference genome. The study will focus on identifying sequence differences that could affect collagen structure and predicted post-translational modification (PTM) potential, especially lysine and proline-related motifs.
+Build a reproducible bioinformatics workflow to compare collagen-related genomic variation between two cat breeds, Rag Doll and Maine Coon, against a human reference and the domestic cat reference genome. The study will also evaluate Feline Leukocyte Antigen (FLA) loci involved in collagen peptide presentation, with the goal of understanding how breed-specific immunogenetic variation may contribute to arthritis progression and how feline FLA-mediated collagen presentation compares to human HLA-collagen biochemical machinery.
 
 ## 2. Core Biological Question
 
-The central hypothesis is that Rag Doll and Maine Coon genomes may contain breed-specific variants in collagen genes that alter predicted modification sites, with implications for structural or biochemical differences in collagen biology.
+The central hypothesis is that Rag Doll and Maine Coon genomes may contain breed-specific variants in collagen genes and FLA antigen-presentation loci that alter collagen structure, peptide processing, and immune recognition, with implications for arthritis susceptibility, progression, and cross-species comparison to human HLA-mediated collagen biology.
 
 The target genes should be prioritized as:
 
@@ -143,7 +143,34 @@ Deliverables:
 - Annotated VCFs
 - Collagen-focused variant table
 
-### Phase 5: Sequence Reconstruction and Consensus Generation
+### Phase 5: FLA Immunogenetics and Collagen Presentation Analysis
+
+Objectives:
+
+- Identify FLA class II genes and linked variants relevant to collagen peptide presentation.
+- Evaluate whether breed-specific FLA variation could influence the presentation of collagen-derived peptides and downstream immune recognition.
+- Compare feline FLA-collagen presentation mechanisms with human HLA-collagen antigen-processing pathways.
+
+Tasks:
+
+1. Annotate FLA class II loci and nearby regulatory regions relevant to antigen presentation.
+2. Compare FLA allele patterns between Rag Doll, Maine Coon, and reference cats.
+3. Link FLA variation to collagen-derived peptide compatibility, antigen processing, and predicted T-cell recognition.
+4. Frame the results in the context of arthritis pathophysiology and human autoimmune collagen biology.
+
+Recommended tools:
+
+- R: VariantAnnotation, GenomicRanges, biomaRt
+- Python: pandas, Bio.Seq, regex-based peptide motif analysis
+- Optional: immunoinformatics tools for peptide-binding motif scoring
+
+Deliverables:
+
+- FLA-focused variant and allele summary
+- Collagen presentation hypothesis table
+- Cross-species comparison report linking feline FLA and human HLA collagen presentation mechanisms
+
+### Phase 6: Sequence Reconstruction and Consensus Generation
 
 Objectives:
 
@@ -168,7 +195,7 @@ Deliverables:
 - Variant-to-protein impact summary
 - Comparison table of reference vs breed sequences
 
-### Phase 6: Comparative Alignment and Structural Interpretation
+### Phase 7: Comparative Alignment and Structural Interpretation
 
 Objectives:
 
@@ -197,7 +224,7 @@ Deliverables:
 - Mutation summary table
 - Candidate residues for PTM interpretation
 
-### Phase 7: PTM and Structural Motif Prediction
+### Phase 8: PTM and Structural Motif Prediction
 
 Objectives:
 
@@ -247,6 +274,7 @@ Deliverables:
 - Generate consensus sequences
 - Compare human, cat, Rag Doll, and Maine Coon proteins
 - Annotate variants by impact
+- Integrate FLA immunogenetics with collagen sequence analysis
 
 ### Milestone 5: PTM Interpretation and Reporting
 
@@ -347,10 +375,11 @@ The project should produce the following outputs:
 1. Prepare reference genomes and gene lists
 2. Build QC and trimming workflow
 3. Align reads and call variants
-4. Generate breed-specific consensus sequences
-5. Compare sequences and identify non-synonymous changes
-6. Evaluate lysine/proline motif changes and PTM potential
-7. Prepare final report and figures
+4. Annotate FLA loci relevant to collagen peptide presentation
+5. Generate breed-specific consensus sequences
+6. Compare sequences and identify non-synonymous changes
+7. Evaluate lysine/proline motif changes and PTM potential
+8. Prepare final report and figures
 
 ## 10. Risk Notes and Mitigation
 
