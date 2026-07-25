@@ -19,6 +19,9 @@ These are high-value collagen targets for cross-species structural comparison an
 ## 3. Working Assumptions
 
 - The study is based on whole-genome sequencing (WGS) data from two cat breeds.
+- The available assets include both raw FASTQ reads and precomputed VCF variant calls.
+- FASTQ and VCF files may represent the same samples, overlapping sample sets, or different samples; sample identity and provenance must be verified before integration.
+- Supplied VCFs will be retained as primary analytical assets rather than treated only as products to regenerate from FASTQ.
 - The workflow will use a hybrid strategy combining:
   - Omics Logic-style guided workflow thinking for reproducible pipeline structure
   - Bioconductor and R for statistical and sequence analysis
@@ -41,12 +44,8 @@ Tasks:
 2. Download the domestic cat reference genome (Felis catus, FeliCa_1.0 or the most appropriate current assembly).
 3. Retrieve collagen gene annotations for human and cat reference genomes.
 4. Collect transcript and protein sequences for the selected collagen genes.
-5. Create a metadata table containing:
-   - Breed name: Rag Doll / Maine Coon
-   - Sample identifier
-   - File type and source
-   - Sequencing platform and read depth
-   - Reference genome version
+5. Create a metadata table containing breed name, sample identifier, available FASTQ read pairs and/or VCF files, file source, checksum, size, acquisition date, sequencing platform, read depth, VCF caller and version, VCF filtering status and cohort composition, reference genome version, expected sex, read group, and known pedigree or replicate relationships.
+6. Build an explicit FASTQ-to-VCF sample map and flag files whose sample identity or reference build is uncertain.
 
 Recommended tools:
 
@@ -57,39 +56,44 @@ Deliverables:
 
 - Reference data manifest
 - Gene and protein sequence tables
-- Analysis-ready input inventory
+- Analysis-ready FASTQ/VCF inventory and sample crosswalk
 
-### Phase 2: Raw Data Ingestion and Quality Control
+### Phase 2: Input Ingestion, Validation, and Quality Control
 
 Objectives:
 
-- Prepare sequencing reads for downstream analysis.
-- Remove technical artifacts and low-quality sequence segments.
+- Validate both raw-read and precomputed-variant assets before analysis.
+- Prepare FASTQ reads for alignment while preserving an independently supplied VCF analysis track.
 
 Tasks:
 
-1. Inspect FASTQ files for read quality, adapter contamination, and duplication.
-2. Trim low-quality bases and remove adapters.
-3. Generate QC reports for each sample.
-4. Record read counts before and after filtering.
+1. Verify file integrity with checksums and confirm compression and format validity.
+2. For FASTQ assets, confirm paired-end mate consistency and sample naming; inspect read quality, adapter contamination, GC distribution, duplication, and overrepresented sequences; trim adapters or low-quality bases only when QC indicates a need; and record read counts before and after filtering.
+3. For VCF assets, inspect headers, sample names, contig definitions, reference build, caller metadata, and filter fields; check sorted order, duplicate records, malformed alleles, genotype completeness, depth, genotype quality, transition/transversion ratio, and PASS rates; compress and index files when required; and split multiallelic records and left-align/normalize alleles against the matching cat reference without discarding the original VCF.
+4. Generate separate QC summaries for FASTQ and VCF assets and record all transformations in the processing log.
 
 Recommended tools:
 
 - FastQC
-- Trimmomatic
+- fastp or Trimmomatic
 - MultiQC
+- bcftools stats, norm, query, and +fill-tags
+- vcftools
+- bgzip / tabix
 
 Recommended workflow logic:
 
-- Input FASTQ -> QC -> trim -> QC summary -> proceed to alignment
+- FASTQ track: input FASTQ -> integrity checks -> QC -> conditional trimming -> alignment
+- VCF track: supplied VCF -> header/build validation -> normalization -> variant QC -> annotation-ready VCF
 
 Deliverables:
 
 - Cleaned reads
-- QC reports
-- Sample processing log
+- Original and normalized/indexed supplied VCFs
+- FASTQ and VCF QC reports
+- Sample identity and processing log
 
-### Phase 3: Alignment and Mapping
+### Phase 3: FASTQ Alignment and Mapping
 
 Objectives:
 
@@ -102,6 +106,7 @@ Tasks:
 2. Sort and index BAM files.
 3. Mark duplicates.
 4. Validate alignment quality and depth.
+5. Confirm BAM sample/read-group labels agree with the FASTQ-to-VCF sample map.
 
 Recommended tools:
 
@@ -116,32 +121,43 @@ Deliverables:
 - Alignment quality summaries
 - Coverage statistics per target gene
 
-### Phase 4: Variant Calling and Annotation
+### Phase 4: FASTQ-Derived Calling, VCF Harmonization, and Annotation
 
 Objectives:
 
-- Identify breed-specific variants in collagen genes and nearby genomic regions.
+- Derive variants from FASTQ while independently leveraging the supplied VCF calls.
+- Measure agreement between supplied and FASTQ-derived variants where samples overlap.
+- Produce a traceable, harmonized variant resource without obscuring call-set provenance.
 - Annotate variants by gene, consequence, and potential functional impact.
 
 Tasks:
 
-1. Run variant calling using GATK or a compatible workflow.
-2. Generate VCF files for Rag Doll and Maine Coon.
-3. Filter variants by confidence and quality thresholds.
-4. Annotate variants with gene context and predicted impact.
-5. Extract variants overlapping collagen genes of interest.
+1. Run per-sample variant calling from aligned FASTQ reads using GATK HaplotypeCaller in GVCF mode or a validated equivalent.
+2. Perform joint genotyping across compatible FASTQ-derived samples and apply documented hard filters or VQSR when sample size supports it.
+3. Harmonize supplied and FASTQ-derived VCFs to the same reference assembly, contig naming convention, representation, and target intervals; use validated liftover only when source builds differ.
+4. Verify sample identity for overlapping samples using genotype concordance, allele balance, sex-linked markers where appropriate, and contamination/relatedness checks.
+5. Compare call sets using site-level and genotype-level concordance, stratified by PASS status, variant type, genomic context, depth, and target gene.
+6. Classify each variant as supported by both call sets, present only in the supplied VCF, present only in FASTQ-derived calls, or discordant in genotype or allele representation.
+7. Investigate discordant high-impact collagen or FLA variants using BAM evidence before inclusion in the high-confidence set.
+8. Retain source-specific VCFs and create a harmonized analysis VCF/table with explicit provenance fields; do not treat absence from a non-callable region as a reference genotype.
+9. Annotate variants with gene context, predicted consequence, population/cohort frequency when available, and potential functional impact.
+10. Extract variants overlapping collagen genes, FLA loci, regulatory regions, and defined flanking intervals.
 
 Recommended tools:
 
 - GATK
 - SnpEff / VEP
-- bcftools
+- bcftools isec, merge, norm, stats, gtcheck, and query
+- Picard GenotypeConcordance or hap.py for concordance assessment
+- VerifyBamID2 or an appropriate contamination/identity checker
 
 Deliverables:
 
-- Variant call sets
-- Annotated VCFs
-- Collagen-focused variant table
+- Filtered FASTQ-derived call set
+- Normalized supplied VCF call set
+- Sample identity and call-set concordance report
+- Provenance-aware harmonized and annotated VCFs
+- Collagen- and FLA-focused variant tables with evidence-source labels
 
 ### Phase 5: FLA Immunogenetics and Collagen Presentation Analysis
 
@@ -179,10 +195,12 @@ Objectives:
 
 Tasks:
 
-1. Extract reference gene sequences.
-2. Apply variants to generate consensus sequences for each breed.
-3. Compare breed-specific sequences to the reference cat and human sequences.
-4. Identify amino acid changes caused by nonsynonymous variants.
+1. Extract reference gene sequences and define callable regions for each sample.
+2. Select variants from the harmonized, provenance-aware call set using documented confidence rules.
+3. Apply phased genotypes where available to generate haplotype sequences; otherwise preserve heterozygous ambiguity rather than forcing a single allele.
+4. Generate sample-level consensus sequences before deriving any breed-level summary.
+5. Compare sample- and breed-specific sequences to the reference cat and human sequences.
+6. Identify amino acid changes caused by nonsynonymous variants and record whether each is supported by supplied VCF, FASTQ-derived calls, or both.
 
 Recommended tools:
 
@@ -192,7 +210,7 @@ Recommended tools:
 Deliverables:
 
 - Breed-specific DNA and protein sequences
-- Variant-to-protein impact summary
+- Variant-to-protein impact summary with call-set provenance and confidence
 - Comparison table of reference vs breed sequences
 
 ### Phase 7: Comparative Alignment and Structural Interpretation
@@ -256,18 +274,21 @@ Deliverables:
 - Define sample metadata schema
 - Download and localize reference genomes
 - Build initial sequence and gene manifest
+- Inventory FASTQ and VCF assets and create the sample crosswalk
 
-### Milestone 2: Read Processing Pipeline
+### Milestone 2: Dual-Input QC and Processing
 
-- Implement QC and trimming workflow
-- Verify sample readiness for alignment
+- Implement FASTQ QC and conditional trimming workflow
+- Implement supplied-VCF validation, normalization, and QC workflow
+- Verify reference-build compatibility and sample identity metadata
 - Create reproducible shell or Python workflow
 
-### Milestone 3: Alignment and Variant Calling
+### Milestone 3: Alignment, Calling, and Concordance
 
 - Implement read mapping and BAM generation
-- Execute variant calling for both breeds
-- Produce filtered VCF outputs
+- Execute FASTQ-derived variant calling for both breeds
+- Compare overlapping samples against supplied VCFs
+- Produce filtered, normalized, and provenance-aware VCF outputs
 
 ### Milestone 4: Sequence Comparison and Annotation
 
@@ -301,13 +322,16 @@ Deliverables:
   - Bio.SeqUtils
   - pandas
   - matplotlib
+  - pysam or cyvcf2 for indexed VCF/BCF and BAM access
 
 ### Supporting tools
 
 - BWA-MEM / BOWTIE2
 - SAMtools / bcftools
 - GATK
-- FastQC / MultiQC / Trimmomatic
+- FastQC / MultiQC / fastp or Trimmomatic
+- bgzip / tabix
+- Picard GenotypeConcordance or hap.py
 
 ## 7. Integration Points for MATLAB / Octave / Scilab and Biopython
 
@@ -357,37 +381,49 @@ Recommended integration points:
 - Parse and manipulate FASTA and FASTQ files with SeqIO.
 - Perform sequence alignment and multiple sequence alignment tasks via Bio.Align.
 - Extract and compare protein sequences and codon translation logic.
+- Use pysam or cyvcf2 alongside Biopython for scalable VCF/BCF genotype access, normalization-aware queries, and BAM evidence retrieval.
 - Generate tables for downstream R/Bioconductor and MATLAB/Octave/Scilab workflows.
-- Serve as the bridge between raw sequencing data and structured analytical outputs.
+- Serve as part of the bridge between raw reads, supplied variants, reconstructed sequences, and structured analytical outputs.
 
 ## 8. Deliverables
 
 The project should produce the following outputs:
 
 1. A reproducible pipeline for Rag Doll and Maine Coon sequence analysis
-2. A curated variant table focused on collagen genes
-3. A comparative alignment report across human, cat reference, Rag Doll, and Maine Coon sequences
-4. A PTM/motif interpretation report identifying candidate sequence changes of biological interest
-5. Figures and summary tables suitable for presentation or publication
+2. A complete FASTQ/VCF sample manifest with checksums, reference builds, and provenance
+3. QC reports for raw reads, supplied VCFs, alignments, and FASTQ-derived calls
+4. A concordance report comparing supplied and FASTQ-derived variants for overlapping samples
+5. A provenance-aware harmonized VCF and curated collagen/FLA variant table
+6. A comparative alignment report across human, cat reference, Rag Doll, and Maine Coon sequences
+7. A PTM/motif interpretation report identifying candidate sequence changes of biological interest
+8. Figures and summary tables suitable for presentation or publication
 
 ## 9. Recommended Execution Order
 
-1. Prepare reference genomes and gene lists
-2. Build QC and trimming workflow
-3. Align reads and call variants
-4. Annotate FLA loci relevant to collagen peptide presentation
-5. Generate breed-specific consensus sequences
-6. Compare sequences and identify non-synonymous changes
-7. Evaluate lysine/proline motif changes and PTM potential
-8. Prepare final report and figures
+1. Prepare reference genomes, annotations, and target gene/FLA intervals
+2. Inventory FASTQ and VCF assets and resolve the sample crosswalk
+3. Validate and normalize supplied VCFs without altering the originals
+4. QC, conditionally trim, and align FASTQ reads
+5. Call and filter FASTQ-derived variants
+6. Harmonize call sets and assess sample identity and genotype concordance
+7. Review discordant high-impact collagen and FLA variants against read evidence
+8. Build the provenance-aware analysis call set and annotate collagen/FLA variants
+9. Generate sample- and breed-specific consensus or haplotype sequences
+10. Compare sequences and identify nonsynonymous changes
+11. Evaluate lysine/proline motif changes and PTM potential
+12. Prepare final report and figures
 
 ## 10. Risk Notes and Mitigation
 
 - Missing or low-quality WGS input may limit confident variant calling.
 - Reference genome version mismatches can cause annotation inconsistencies.
+- Supplied VCFs may use different callers, filters, contig names, variant representations, or cohort assumptions; preserve originals and normalize copies before comparison.
+- FASTQ and VCF sample labels may not refer to the same biological individuals; require metadata reconciliation and genotype-based identity checks before merging.
+- A VCF containing only variant sites cannot establish callability at absent positions; use gVCF blocks, BAM depth, or callable-region masks to distinguish homozygous reference from missing evidence.
+- Breed-level conclusions are vulnerable to small sample size, relatedness, uneven coverage, and caller-specific artifacts; report sample-level results and stratify by evidence source.
 - Some variants may have uncertain biological significance without experimental validation.
-- To reduce risk, maintain a strict metadata log and version-controlled analysis scripts.
+- To reduce risk, maintain immutable raw inputs, checksums, a strict metadata/provenance log, callable-region masks, and version-controlled analysis scripts.
 
 ## 11. Recommended Next Step
 
-Begin with a minimal viable pipeline on one representative sample from each breed, confirm that reads align correctly, and then scale to the full dataset once the workflow is validated.
+Begin by inventorying all FASTQ and VCF files and constructing the sample crosswalk. Then run a minimal dual-track pilot on one representative sample from each breed: validate and normalize its supplied VCF, process and align its FASTQ reads, generate an independent call set, and quantify concordance. Resolve reference-build, identity, and filtering discrepancies before scaling to the full dataset.
