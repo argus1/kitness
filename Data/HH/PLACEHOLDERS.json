@@ -1,0 +1,14 @@
+{
+  "dataset": "HH",
+  "alias": "HuaHua",
+  "target_dir": "Data/HH",
+  "google_drive_folder_id": "1D1tkfWOSlLRUB-s4n2Rdxt3BiUz5kUHa",
+  "google_drive_folder_url": "https://drive.google.com/drive/folders/1D1tkfWOSlLRUB-s4n2Rdxt3BiUz5kUHa?usp=drive_link",
+  "placeholder_type": "google_drive_folder_reference",
+  "files": [
+    "AA.SV.27.31201053200100.LP.578.C3.L1.R134.WGS.fastq.gz",
+    "AA.SV.27.31201053200100.SP.271.D5.L2.R134.WGS.fastq.gz",
+    "AA.SV.27.31201053200100.g.vcf.gz",
+    "AA.SV.27.31201053200100.g.vcf.gz.tbi"
+  ]
+}
