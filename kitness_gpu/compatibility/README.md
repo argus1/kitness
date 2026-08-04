@@ -8,4 +8,4 @@ Sprint 1 provides native Metal detection only. Future work can add adapters here
 - Vulkan compute
 - CUDA when NVIDIA hardware and its SDK are available
 
-Adapters must preserve the public `kitness_gpu.select_backend()` interface.
+Adapters must preserve the public `kitness_gpu.select_backend()` and `kitnessGpu::gpu_backend()` interfaces.

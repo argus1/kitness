@@ -38,8 +38,10 @@ The current development machine has the following verified components:
 - macOS SDK 26.5
 - Metal compiler 7.6.109.0
 - Python 3.9.6
+- R 4.6.1
+- BiocManager 1.30.27
 
-R is not installed on this machine. Install and verify R before beginning the R integration work.
+The `kitnessGpu` package is validated locally against this R installation.
 
 ## Sprint 1 limitations
 

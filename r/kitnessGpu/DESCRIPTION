@@ -1,0 +1,21 @@
+Package: kitnessGpu
+Type: Package
+Title: Metal Backend Support for Cat Genomics Workflows
+Version: 0.0.0.9000
+Author: Kitness Developers [aut, cre]
+Maintainer: Kitness Developers <maintainers@example.org>
+Authors@R: c(
+    person(
+        given = "Kitness",
+        family = "Developers",
+        email = "maintainers@example.org",
+        role = c("aut", "cre")
+    )
+    )
+Description: Provides a small R-facing interface for selecting the Metal GPU
+    backend used by cat genomics workflows on macOS.
+License: MIT + file LICENSE
+Encoding: UTF-8
+LazyData: false
+Depends:
+    R (>= 4.4)
