@@ -1,5 +1,7 @@
 # Development Plan: Comparative Cat Genomics Study
 
+> See [GPU_roadmap.md](GPU_roadmap.md) for the GPU acceleration strategy, including CUDA, Metal, Vulkan, OpenCL compatibility, and the longer-term R/Bioconductor package direction.
+
 ## 1. Project Goal
 
 Build a reproducible bioinformatics workflow to compare collagen-related genomic variation between two cat breeds, Rag Doll and Maine Coon, against a human reference and the domestic cat reference genome. The study will also evaluate Feline Leukocyte Antigen (FLA) loci involved in collagen peptide presentation, with the goal of understanding how breed-specific immunogenetic variation may contribute to arthritis progression and how feline FLA-mediated collagen presentation compares to human HLA-collagen biochemical machinery.
@@ -303,7 +305,11 @@ Deliverables:
 - Produce figures and a narrative summary
 - Prepare final deliverables for review
 
-## 6. Recommended Tool Stack
+## 6. GPU Roadmap and Sprint Planning
+
+For the GPU acceleration strategy and the proposed sprint-based backlog, see [GPU_roadmap.md](GPU_roadmap.md). The roadmap prioritizes a GPU deliverable by the end of Sprint 1, with a focus on a minimal proof-of-concept that can be validated on real sequence and variant data.
+
+## 7. Recommended Tool Stack
 
 ### Primary stack
 
