@@ -1,0 +1,22 @@
+{
+  "positron.project": {
+    "name": "kitness",
+    "mode": "template"
+  },
+  "positron.r": {
+    "interpreterPath": "/absolute/path/to/R",
+    "args": []
+  },
+  "positron.python": {
+    "interpreterPath": "/absolute/path/to/python3",
+    "venvPath": "/absolute/path/to/venv"
+  },
+  "positron.tools": {
+    "required": [
+      "R",
+      "python3",
+      "git"
+    ],
+    "diagnosticsScript": "scripts/positron_stub.sh"
+  }
+}
