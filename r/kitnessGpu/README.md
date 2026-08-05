@@ -13,3 +13,22 @@ kitnessGpu::gpu_backend()
 ```
 
 Only Metal is enabled. CUDA remains deferred until an NVIDIA-capable platform and CUDA SDK are available.
+
+## Positron integration stub
+
+This package includes starter stubs for future Positron-based workflows.
+
+1. Copy the template settings file into your local VS Code settings workflow and fill in interpreter paths from your machine.
+2. Run the shell bootstrap stub from the repository root:
+
+```bash
+bash scripts/positron_stub.sh
+```
+
+3. Run the R integration stub to verify basic tool discovery and backend reporting:
+
+```r
+source("r/kitnessGpu/examples/positron_stub.R")
+```
+
+The files are intentionally placeholders and document TODO points for complete task automation in a later sprint.
