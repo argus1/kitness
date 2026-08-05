@@ -1,0 +1,52 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Positron: Bootstrap Stub Environment",
+      "type": "shell",
+      "command": "bash",
+      "args": [
+        "scripts/positron_stub.sh"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Positron: Run R Stub Diagnostics",
+      "type": "shell",
+      "command": "/usr/bin/env",
+      "args": [
+        "Rscript",
+        "r/kitnessGpu/examples/positron_stub.R"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Positron: Validate Stub Files",
+      "type": "shell",
+      "command": "bash",
+      "args": [
+        "scripts/check_positron_stubs.sh"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Positron: Full Stub Validation",
+      "dependsOn": [
+        "Positron: Bootstrap Stub Environment",
+        "Positron: Run R Stub Diagnostics",
+        "Positron: Validate Stub Files"
+      ],
+      "dependsOrder": "sequence",
+      "problemMatcher": []
+    }
+  ]
+}

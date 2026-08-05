@@ -32,3 +32,16 @@ source("r/kitnessGpu/examples/positron_stub.R")
 ```
 
 The files are intentionally placeholders and document TODO points for complete task automation in a later sprint.
+
+## Positron tasks and CI validation
+
+The repository now includes a real task configuration in `.vscode/tasks.json` for running the stub flow in sequence:
+
+```text
+Positron: Bootstrap Stub Environment
+Positron: Run R Stub Diagnostics
+Positron: Validate Stub Files
+Positron: Full Stub Validation
+```
+
+A lightweight CI workflow at `.github/workflows/positron-stubs.yml` runs `scripts/check_positron_stubs.sh` and fails if required Positron stub files are missing.

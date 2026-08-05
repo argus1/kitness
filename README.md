@@ -24,3 +24,9 @@ Sequencing files are intentionally **not** stored in git or git-lfs due to size 
 	- or `python scripts/prepare_data.py download all`
 
 The script downloads directly from the shared Google Drive folders into `Data/BB` and `Data/HH`, then reports how many expected files are present.
+
+## Positron stub automation
+
+- Workspace tasks for Positron stubs are defined in `.vscode/tasks.json`.
+- Run the full local stub check from VS Code using the task `Positron: Full Stub Validation`.
+- CI validates required Positron stub files using `.github/workflows/positron-stubs.yml`.
