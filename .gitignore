@@ -8,3 +8,6 @@ Data/BB/*
 !Data/BB/PLACEHOLDERS.json
 Data/HH/*
 !Data/HH/PLACEHOLDERS.json
+
+# Generated Objective-C++ and Metal build artifacts.
+kitness_gpu/native/build/
