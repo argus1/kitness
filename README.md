@@ -30,3 +30,15 @@ The script downloads directly from the shared Google Drive folders into `Data/BB
 - Workspace tasks for Positron stubs are defined in `.vscode/tasks.json`.
 - Run the full local stub check from VS Code using the task `Positron: Full Stub Validation`.
 - CI validates required Positron stub files using `.github/workflows/positron-stubs.yml`.
+
+## GPU backend capability contract
+
+The repository now uses a backend-neutral capability contract in both Python and R entry points:
+
+- Python: `kitness_gpu.backend_capabilities()` and `kitness_gpu.select_backend()`
+- R: `kitnessGpu::gpu_capabilities()` and `kitnessGpu::gpu_backend()`
+
+Runtime selection priority is `cuda` first, then `metal`, then `unavailable`.
+
+ROCm (`rocm`) and oneAPI (`oneapi`) are currently explicit stubs so the public
+interface remains backend-neutral while native integrations are developed.

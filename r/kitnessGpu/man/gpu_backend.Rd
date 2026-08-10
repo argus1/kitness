@@ -5,12 +5,13 @@
 gpu_backend()
 }
 \value{
-A character string: \code{"metal"} when the native Metal compiler is available,
-or \code{"unavailable"} otherwise.
+A character string: \code{"cuda"} when an NVIDIA runtime is available,
+\code{"metal"} when the native Metal toolchain is available, or
+\code{"unavailable"} otherwise.
 }
 \description{
-Detects the Metal compiler through the macOS developer toolchain. CUDA support
-is intentionally deferred until an NVIDIA-capable platform is available.
+Chooses the preferred backend from a backend-neutral capability contract,
+prioritizing CUDA over Metal when both are available.
 }
 \examples{
 gpu_backend()

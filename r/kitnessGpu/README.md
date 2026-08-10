@@ -1,18 +1,28 @@
 # kitnessGpu
 
-`kitnessGpu` exposes a small R interface for Metal-backed cat genomics workflows.
+`kitnessGpu` exposes a small R interface for backend-neutral GPU capability
+discovery used by cat genomics workflows.
 
-## Metal backend check
+## Backend checks
 
 Install the package from the repository root, then query the available backend:
 
 ```r
 install.packages("r/kitnessGpu", repos = NULL, type = "source")
 kitnessGpu::gpu_backend()
-#> [1] "metal"
+#> [1] "cuda" | "metal" | "unavailable"
+
+kitnessGpu::gpu_capabilities()
+#> $cuda
+#> $metal
+#> $rocm
+#> $oneapi
 ```
 
-Only Metal is enabled. CUDA remains deferred until an NVIDIA-capable platform and CUDA SDK are available.
+Selection priority is `cuda` first, then `metal`, then `unavailable`.
+
+`rocm` and `oneapi` are currently documented stubs to preserve a backend-neutral
+public contract while their native bridges and integration tests are pending.
 
 ## Positron integration stub
 

@@ -1,1 +1,2 @@
 export(gpu_backend)
+export(gpu_capabilities)
