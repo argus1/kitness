@@ -1,6 +1,6 @@
 Package: kitnessGpu
 Type: Package
-Title: Metal Backend Support for Cat Genomics Workflows
+Title: GPU Backend Capability Interface for Cat Genomics Workflows
 Version: 0.0.0.9000
 Author: Kitness Developers [aut, cre]
 Maintainer: Kitness Developers <maintainers@example.org>
@@ -12,10 +12,13 @@ Authors@R: c(
         role = c("aut", "cre")
     )
     )
-Description: Provides a small R-facing interface for selecting the Metal GPU
-    backend used by cat genomics workflows on macOS.
+Description: Provides a small R-facing interface for probing GPU backend
+    capabilities and selecting a preferred runtime backend for cat genomics
+    workflows. The current contract prioritizes CUDA when an NVIDIA runtime is
+    available, then Metal, with documented stub entries for planned ROCm and
+    oneAPI integrations.
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: false
 Depends:
-    R (>= 4.4)
+    R (>= 4.3.3)

@@ -9,6 +9,12 @@
         "scripts/positron_stub.sh"
       ],
       "options": {
+        "cwd": "${workspaceFolder}",
+        "env": {
+          "CUDA_ENV": "/home/argus/anaconda3/envs/cellpose"
+        }
+      },
+      "options": {
         "cwd": "${workspaceFolder}"
       },
       "problemMatcher": []

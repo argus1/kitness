@@ -30,6 +30,7 @@ The script downloads directly from the shared Google Drive folders into `Data/BB
 - Workspace tasks for Positron stubs are defined in `.vscode/tasks.json`.
 - Run the full local stub check from VS Code using the task `Positron: Full Stub Validation`.
 - CI validates required Positron stub files using `.github/workflows/positron-stubs.yml`.
+- The bootstrap stub now prefers the Conda environment at `/home/argus/anaconda3/envs/cellpose`, which provides `nvcc` 11.6 for broader CUDA compatibility.
 
 ## GPU backend capability contract
 

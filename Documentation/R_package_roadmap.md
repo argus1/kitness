@@ -2,7 +2,7 @@
 
 ## Current foundation
 
-The `r/kitnessGpu` package provides `kitnessGpu::gpu_backend()`, a Metal-only backend check validated on the local macOS development machine. The package has no CUDA code or CUDA dependency.
+The `r/kitnessGpu` package now provides a backend-neutral capability contract through `kitnessGpu::gpu_capabilities()` and `kitnessGpu::gpu_backend()`. Runtime selection prioritizes CUDA when an NVIDIA runtime is present, falls back to Metal when available, and otherwise reports `"unavailable"`.
 
 ## Next package increments
 
@@ -14,4 +14,4 @@ The `r/kitnessGpu` package provides `kitnessGpu::gpu_backend()`, a Metal-only ba
 
 ## Deferred platform work
 
-CUDA remains deferred until NVIDIA hardware and the CUDA SDK are available. A future CUDA implementation must be added behind the existing public interfaces and include platform-specific validation before it is enabled.
+Native CUDA bridge build work remains deferred until CUDA toolkit compiler support (`nvcc`) is installed and integrated into the package toolchain. The public CUDA capability and selection interfaces are now active and validated through runtime probes.
