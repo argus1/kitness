@@ -5,6 +5,7 @@ stopifnot(backend %in% c("cuda", "metal", "unavailable"))
 
 capabilities <- gpu_capabilities()
 stopifnot(identical(names(capabilities), c("cuda", "metal", "rocm", "oneapi")))
+stopifnot(is.logical(capabilities$cuda$compiled), length(capabilities$cuda$compiled) == 1L)
 
 for (name in names(capabilities)) {
 	entry <- capabilities[[name]]
@@ -14,8 +15,14 @@ for (name in names(capabilities)) {
 }
 
 nvidia_smi <- Sys.which("nvidia-smi")
-if (nzchar(nvidia_smi)) {
+if (nzchar(nvidia_smi) && isTRUE(capabilities$cuda$compiled)) {
 	stopifnot(identical(backend, "cuda"))
+	stopifnot(isTRUE(capabilities$cuda$compiled))
+
+	values <- c(1.5, -2, 0, 42.25)
+	stopifnot(identical(gpu_roundtrip(values, backend = "cuda"), values))
+} else {
+	message("Skipping CUDA round-trip smoke test: native bridge or runtime unavailable")
 }
 
 xcrun <- Sys.which("xcrun")

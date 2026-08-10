@@ -8,6 +8,10 @@
 #' @export
 gpu_capabilities <- function() {
     cuda <- .probe_backend_command("nvidia-smi")
+    cuda_compiled <- isTRUE(.Call(
+        "kitness_cuda_compiled",
+        PACKAGE = "kitnessGpu"
+    ))
     metal <- .probe_backend_command("xcrun", c("-f", "metal"))
 
     hipcc <- Sys.which("hipcc")
@@ -16,9 +20,14 @@ gpu_capabilities <- function() {
     list(
         cuda = list(
             backend = "cuda",
-            available = cuda$available,
-            status = if (cuda$available) "available" else "unavailable",
-            detail = cuda$detail
+            available = cuda$available && cuda_compiled,
+            compiled = cuda_compiled,
+            status = if (cuda$available && cuda_compiled) "available" else "unavailable",
+            detail = if (!cuda_compiled) {
+                "CUDA runtime detected but native bridge was not compiled"
+            } else {
+                cuda$detail
+            }
         ),
         metal = list(
             backend = "metal",
@@ -66,6 +75,26 @@ gpu_backend <- function() {
         return("metal")
     }
     "unavailable"
+}
+
+#' Round-trip numeric values through a GPU backend
+#'
+#' Copies a numeric vector to backend-owned device memory and returns it after
+#' synchronization and a device-to-host copy.
+#'
+#' @param values A numeric vector.
+#' @param backend Backend identifier. Currently only `"cuda"` is implemented.
+#' @return A numeric vector containing the copied values.
+#' @export
+gpu_roundtrip <- function(values, backend = gpu_backend()) {
+    if (!identical(backend, "cuda")) {
+        stop(sprintf("GPU backend '%s' does not support round trips", backend), call. = FALSE)
+    }
+    if (!is.numeric(values) || is.object(values)) {
+        stop("`values` must be an ordinary numeric vector", call. = FALSE)
+    }
+
+    .Call("kitness_cuda_roundtrip", as.double(values), PACKAGE = "kitnessGpu")
 }
 
 .probe_backend_command <- function(command, args = character()) {

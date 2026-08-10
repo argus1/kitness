@@ -1,2 +1,4 @@
 export(gpu_backend)
 export(gpu_capabilities)
+export(gpu_roundtrip)
+useDynLib(kitnessGpu, .registration = TRUE)

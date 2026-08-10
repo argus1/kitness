@@ -1,0 +1,34 @@
+#!/bin/sh
+
+set -eu
+
+srcdir="${srcdir:-.}"
+makevars="${srcdir}/src/Makevars"
+nvcc="${NVCC:-$(command -v nvcc 2>/dev/null || true)}"
+
+if test -n "${nvcc}"; then
+    cuda_home="${CUDA_HOME:-$(CDPATH= cd -- "$(dirname "${nvcc}")/.." && pwd)}"
+    cuda_host_cxx="${CUDA_HOST_CXX:-}"
+    host_flag=""
+    if test -n "${cuda_host_cxx}"; then
+        host_flag="-ccbin ${cuda_host_cxx}"
+    fi
+
+    cat > "${makevars}" <<EOF
+OBJECTS = init.o cuda_bridge.o
+PKG_LIBS = -L${cuda_home}/lib -Wl,-rpath,${cuda_home}/lib -lcudart
+NVCC = ${nvcc}
+NVCCFLAGS = ${host_flag} -std=c++14 -Xcompiler -fPIC
+
+all: \$(SHLIB)
+
+cuda_bridge.o: cuda_bridge.cu
+	\$(NVCC) \$(NVCCFLAGS) \$(R_XTRA_CPPFLAGS) -I\$(R_INCLUDE_DIR) -c \$< -o \$@
+EOF
+    echo "configure: CUDA bridge enabled with ${nvcc}"
+else
+    cat > "${makevars}" <<'EOF'
+OBJECTS = init.o cuda_stub.o
+EOF
+    echo "configure: nvcc not found; building CUDA-unavailable stub"
+fi

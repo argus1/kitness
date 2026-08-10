@@ -7,7 +7,8 @@ gpu_capabilities()
 \value{
 A named list with entries for \code{"cuda"}, \code{"metal"}, \code{"rocm"}, and
 \code{"oneapi"}. Each entry provides backend name, availability, status, and
-a detail string.
+a detail string. The CUDA entry also reports whether the native bridge was
+compiled.
 }
 \description{
 Reports backend availability through a backend-neutral capability contract,

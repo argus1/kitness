@@ -24,6 +24,34 @@ Selection priority is `cuda` first, then `metal`, then `unavailable`.
 `rocm` and `oneapi` are currently documented stubs to preserve a backend-neutral
 public contract while their native bridges and integration tests are pending.
 
+## CUDA native bridge
+
+When `nvcc` is available during installation, the package builds a registered
+`.Call()` bridge that owns CUDA device memory and a CUDA stream. The public
+`gpu_roundtrip()` operation validates an ordinary numeric vector, copies it to
+device memory, copies it back after stream synchronization, and translates CUDA
+runtime failures into R errors.
+
+The CUDA compiler and host C++ compiler can be selected explicitly:
+
+```bash
+NVCC=/path/to/nvcc \
+CUDA_HOST_CXX=/path/to/c++ \
+R CMD INSTALL r/kitnessGpu
+```
+
+For the local CUDA 11.6 setup, use:
+
+```bash
+PATH=/home/argus/anaconda3/envs/cellpose/bin:$PATH \
+CUDA_HOST_CXX=/home/argus/anaconda3/envs/gmx-cuda128full/bin/x86_64-conda-linux-gnu-c++ \
+R CMD INSTALL r/kitnessGpu
+```
+
+Without `nvcc`, the package installs a native unavailable-backend stub. In that
+build, `gpu_capabilities()$cuda$compiled` is `FALSE`, CUDA is not selected, and
+`gpu_roundtrip(..., backend = "cuda")` raises an actionable R error.
+
 ## Positron integration stub
 
 This package includes starter stubs for future Positron-based workflows.
