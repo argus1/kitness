@@ -3,8 +3,8 @@
 #' Reports availability for current and planned backends through a backend-
 #' neutral capability contract.
 #'
-#' @return A named list with entries for `"cuda"`, `"metal"`, `"rocm"`, and
-#'   `"oneapi"`.
+#' @return A named list with entries for `"cuda"`, `"metal"`, `"rocm"`,
+#'   `"oneapi"`, and `"cpu"`.
 #' @export
 gpu_capabilities <- function() {
     cuda <- .probe_backend_command("nvidia-smi")
@@ -54,6 +54,12 @@ gpu_capabilities <- function() {
             } else {
                 "dpcpp not found (execution unavailable in Sprint 1)"
             }
+        ),
+        cpu = list(
+            backend = "cpu",
+            available = TRUE,
+            status = "available",
+            detail = "host-resident fallback"
         )
     )
 }
@@ -61,10 +67,10 @@ gpu_capabilities <- function() {
 #' Select the available GPU backend
 #'
 #' Chooses `"cuda"` when an NVIDIA runtime is available, falls back to
-#' `"metal"` when the native Metal toolchain is available, and returns
-#' `"unavailable"` otherwise.
+#' `"metal"` when the native Metal toolchain is available, and returns `"cpu"`
+#' otherwise.
 #'
-#' @return A character string, one of `"cuda"`, `"metal"`, or `"unavailable"`.
+#' @return A character string, one of `"cuda"`, `"metal"`, or `"cpu"`.
 #' @export
 gpu_backend <- function() {
     capabilities <- gpu_capabilities()
@@ -74,7 +80,7 @@ gpu_backend <- function() {
     if (isTRUE(capabilities$metal$available)) {
         return("metal")
     }
-    "unavailable"
+    "cpu"
 }
 
 #' Round-trip numeric values through a GPU backend
@@ -83,18 +89,23 @@ gpu_backend <- function() {
 #' synchronization and a device-to-host copy.
 #'
 #' @param values A numeric vector.
-#' @param backend Backend identifier. Currently only `"cuda"` is implemented.
+#' @param backend Backend identifier. `"cuda"` and `"cpu"` are implemented.
 #' @return A numeric vector containing the copied values.
 #' @export
 gpu_roundtrip <- function(values, backend = gpu_backend()) {
-    if (!identical(backend, "cuda")) {
-        stop(sprintf("GPU backend '%s' does not support round trips", backend), call. = FALSE)
-    }
     if (!is.numeric(values) || is.object(values)) {
         stop("`values` must be an ordinary numeric vector", call. = FALSE)
     }
 
-    .Call("kitness_cuda_roundtrip", as.double(values), PACKAGE = "kitnessGpu")
+    values <- as.double(values)
+    if (identical(backend, "cpu")) {
+        return(values)
+    }
+    if (identical(backend, "cuda")) {
+        return(.Call("kitness_cuda_roundtrip", values, PACKAGE = "kitnessGpu"))
+    }
+
+    stop(sprintf("GPU backend '%s' does not support round trips", backend), call. = FALSE)
 }
 
 .probe_backend_command <- function(command, args = character()) {

@@ -1,10 +1,10 @@
 library(kitnessGpu)
 
 backend <- gpu_backend()
-stopifnot(backend %in% c("cuda", "metal", "unavailable"))
+stopifnot(backend %in% c("cuda", "metal", "cpu"))
 
 capabilities <- gpu_capabilities()
-stopifnot(identical(names(capabilities), c("cuda", "metal", "rocm", "oneapi")))
+stopifnot(identical(names(capabilities), c("cuda", "metal", "rocm", "oneapi", "cpu")))
 stopifnot(is.logical(capabilities$cuda$compiled), length(capabilities$cuda$compiled) == 1L)
 
 for (name in names(capabilities)) {
@@ -13,6 +13,10 @@ for (name in names(capabilities)) {
 	stopifnot(is.logical(entry$available), length(entry$available) == 1L)
 	stopifnot(is.character(entry$status), length(entry$status) == 1L)
 }
+
+cpu_values <- c(1.5, -2, 0, 42.25)
+cpu_result <- gpu_roundtrip(cpu_values, backend = "cpu")
+stopifnot(is.double(cpu_result), identical(cpu_result, cpu_values))
 
 nvidia_smi <- Sys.which("nvidia-smi")
 if (nzchar(nvidia_smi) && isTRUE(capabilities$cuda$compiled)) {
