@@ -10,7 +10,7 @@ Install the package from the repository root, then query the available backend:
 ```r
 install.packages("r/kitnessGpu", repos = NULL, type = "source")
 kitnessGpu::gpu_backend()
-#> [1] "cuda" | "metal" | "unavailable"
+#> [1] "cuda" | "metal" | "cpu"
 
 kitnessGpu::gpu_capabilities()
 #> $cuda
@@ -20,6 +20,8 @@ kitnessGpu::gpu_capabilities()
 ```
 
 Selection priority is `cuda` first, then `metal`, then `unavailable`.
+
+Selection priority is `cuda` first, then `metal`, then `cpu` fallback.
 
 `rocm` and `oneapi` are currently documented stubs to preserve a backend-neutral
 public contract while their native bridges and integration tests are pending.
@@ -51,6 +53,32 @@ R CMD INSTALL r/kitnessGpu
 Without `nvcc`, the package installs a native unavailable-backend stub. In that
 build, `gpu_capabilities()$cuda$compiled` is `FALSE`, CUDA is not selected, and
 `gpu_roundtrip(..., backend = "cuda")` raises an actionable R error.
+
+On Windows, `configure.win` applies the same conditional rule so package
+installation retains a CPU-only path when `nvcc` is unavailable.
+
+## Session handles
+
+Long-lived CUDA sessions are available through external pointers with registered
+finalizers:
+
+```r
+session <- kitnessGpu::gpu_session_open("cuda")
+result <- kitnessGpu::gpu_roundtrip(c(1, 2, 3), session = session)
+kitnessGpu::gpu_session_close(session)
+```
+
+## ROCm and oneAPI TODO scaffolds
+
+Use the public scaffold report for planned backend interfaces:
+
+```r
+kitnessGpu::gpu_backend_todo("rocm")
+kitnessGpu::gpu_backend_todo("oneapi")
+```
+
+Both backends remain unavailable in the runtime capability contract until
+hardware-backed integration coverage is added.
 
 ## Positron integration stub
 

@@ -2,11 +2,12 @@
 \alias{gpu_roundtrip}
 \title{Round-Trip Numeric Values Through a GPU Backend}
 \usage{
-gpu_roundtrip(values, backend = gpu_backend())
+gpu_roundtrip(values, session = NULL, backend = gpu_backend())
 }
 \arguments{
 \item{values}{A numeric vector.}
-\item{backend}{Backend identifier. Currently only \code{"cuda"} is implemented.}
+\item{session}{Optional backend session object created with \code{gpu_session_open()}.}
+\item{backend}{Backend identifier. \code{"cuda"} and \code{"cpu"} are implemented.}
 }
 \value{
 A numeric vector containing the copied values.

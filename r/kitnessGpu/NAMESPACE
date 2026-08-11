@@ -1,4 +1,8 @@
 export(gpu_backend)
+export(gpu_backend_todo)
 export(gpu_capabilities)
 export(gpu_roundtrip)
+export(gpu_session_backend)
+export(gpu_session_close)
+export(gpu_session_open)
 useDynLib(kitnessGpu, .registration = TRUE)

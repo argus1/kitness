@@ -89,15 +89,27 @@ gpu_backend <- function() {
 #' synchronization and a device-to-host copy.
 #'
 #' @param values A numeric vector.
+#' @param session Optional backend session object created with
+#'   [gpu_session_open()].
 #' @param backend Backend identifier. `"cuda"` and `"cpu"` are implemented.
 #' @return A numeric vector containing the copied values.
 #' @export
-gpu_roundtrip <- function(values, backend = gpu_backend()) {
+gpu_roundtrip <- function(values, session = NULL, backend = gpu_backend()) {
     if (!is.numeric(values) || is.object(values)) {
         stop("`values` must be an ordinary numeric vector", call. = FALSE)
     }
 
     values <- as.double(values)
+    if (!is.null(session)) {
+        if (!inherits(session, "kitness_gpu_session")) {
+            stop("`session` must be a kitness_gpu_session", call. = FALSE)
+        }
+        if (!isTRUE(.Call("kitness_cuda_session_is_active", session, PACKAGE = "kitnessGpu"))) {
+            stop("CUDA session is closed", call. = FALSE)
+        }
+        return(.Call("kitness_cuda_roundtrip_with_session", values, session, PACKAGE = "kitnessGpu"))
+    }
+
     if (identical(backend, "cpu")) {
         return(values)
     }
@@ -106,6 +118,89 @@ gpu_roundtrip <- function(values, backend = gpu_backend()) {
     }
 
     stop(sprintf("GPU backend '%s' does not support round trips", backend), call. = FALSE)
+}
+
+#' Open a backend session handle
+#'
+#' Creates a backend-owned session represented as an external pointer with a
+#' registered finalizer.
+#'
+#' @param backend Backend identifier. Currently only `"cuda"` is implemented.
+#' @return An external pointer session handle.
+#' @export
+gpu_session_open <- function(backend = gpu_backend()) {
+    if (!identical(backend, "cuda")) {
+        stop(sprintf("Backend '%s' does not support sessions", backend), call. = FALSE)
+    }
+
+    session <- .Call("kitness_cuda_session_create", PACKAGE = "kitnessGpu")
+    attr(session, "backend") <- "cuda"
+    class(session) <- c("kitness_gpu_session", class(session))
+    reg.finalizer(session, .cuda_session_finalizer, onexit = TRUE)
+    session
+}
+
+#' Close a backend session handle
+#'
+#' @param session A session handle created with [gpu_session_open()].
+#' @return Invisibly returns `TRUE`.
+#' @export
+gpu_session_close <- function(session) {
+    if (!inherits(session, "kitness_gpu_session")) {
+        stop("`session` must be a kitness_gpu_session", call. = FALSE)
+    }
+
+    .Call("kitness_cuda_session_destroy", session, PACKAGE = "kitnessGpu")
+    invisible(TRUE)
+}
+
+#' Return the backend associated with a session
+#'
+#' @param session A session handle created with [gpu_session_open()].
+#' @return Backend name.
+#' @export
+gpu_session_backend <- function(session) {
+    if (!inherits(session, "kitness_gpu_session")) {
+        stop("`session` must be a kitness_gpu_session", call. = FALSE)
+    }
+    attr(session, "backend")
+}
+
+.cuda_session_finalizer <- function(session) {
+    .Call("kitness_cuda_session_destroy", session, PACKAGE = "kitnessGpu")
+    invisible(NULL)
+}
+
+#' Report backend scaffold TODO interfaces
+#'
+#' Returns non-executing scaffold points for unavailable backends.
+#'
+#' @param backend Backend identifier. Supported values are `"rocm"` and
+#'   `"oneapi"`.
+#' @return A list describing planned interface entry points.
+#' @export
+gpu_backend_todo <- function(backend) {
+    if (!is.character(backend) || length(backend) != 1L) {
+        stop("`backend` must be a single backend name", call. = FALSE)
+    }
+
+    if (identical(backend, "rocm")) {
+        return(list(
+            backend = "rocm",
+            supported = FALSE,
+            interfaces = c("initialize", "allocate", "copy", "stream", "launch", "error")
+        ))
+    }
+
+    if (identical(backend, "oneapi")) {
+        return(list(
+            backend = "oneapi",
+            supported = FALSE,
+            interfaces = c("queue", "usm_or_buffer", "copy", "synchronize", "dispatch", "error")
+        ))
+    }
+
+    stop(sprintf("Backend '%s' has no TODO scaffold", backend), call. = FALSE)
 }
 
 .probe_backend_command <- function(command, args = character()) {

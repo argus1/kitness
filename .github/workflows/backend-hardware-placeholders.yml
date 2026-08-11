@@ -1,0 +1,25 @@
+name: Backend Hardware Placeholders
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "r/kitnessGpu/**"
+      - ".github/workflows/backend-hardware-placeholders.yml"
+
+jobs:
+  rocm-placeholder:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Placeholder for future ROCm runner
+        run: |
+          echo "ROCm hardware CI placeholder"
+          echo "TODO: move to AMD GPU-backed runner before enabling rocm backend"
+
+  oneapi-placeholder:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Placeholder for future oneAPI runner
+        run: |
+          echo "oneAPI hardware CI placeholder"
+          echo "TODO: move to Intel GPU-backed runner before enabling oneapi backend"
