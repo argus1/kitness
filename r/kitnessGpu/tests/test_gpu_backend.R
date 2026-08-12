@@ -24,6 +24,12 @@ unsupported_error <- tryCatch(
 )
 stopifnot(grepl("does not support round trips", unsupported_error, fixed = TRUE))
 
+metal_error <- tryCatch(
+	gpu_roundtrip(cpu_values, backend = "metal"),
+	error = conditionMessage
+)
+stopifnot(grepl("Metal backend is unavailable", metal_error, fixed = TRUE))
+
 nvidia_smi <- Sys.which("nvidia-smi")
 if (nzchar(nvidia_smi) && isTRUE(capabilities$cuda$compiled)) {
 	stopifnot(identical(backend, "cuda"))

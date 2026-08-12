@@ -116,6 +116,12 @@ gpu_roundtrip <- function(values, session = NULL, backend = gpu_backend()) {
     if (identical(backend, "cuda")) {
         return(.Call("kitness_cuda_roundtrip", values, PACKAGE = "kitnessGpu"))
     }
+    if (identical(backend, "metal")) {
+        stop(
+            "Metal backend is unavailable: this R package has no Metal bridge; use backend = 'cpu' or install a build with Metal support",
+            call. = FALSE
+        )
+    }
 
     stop(sprintf("GPU backend '%s' does not support round trips", backend), call. = FALSE)
 }

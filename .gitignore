@@ -1,6 +1,7 @@
 Documentation/Cat_genomics_plan.md
 Documentation/omics_logic_bioconductor.md
 Documentation/FLA_and_collagen.md
+BioconductorSandboxkp.pem
 
 # Large sequencing assets are managed via manifests + Google Drive links.
 # Keep only placeholder manifests in git; ignore real downloaded data files.
