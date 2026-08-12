@@ -5,7 +5,7 @@
 gpu_session_open(backend = gpu_backend())
 }
 \arguments{
-\item{backend}{Backend identifier. Currently only \code{"cuda"} is implemented.}
+\item{backend}{Backend identifier. \code{"cuda"} and \code{"rocm"} are implemented.}
 }
 \value{
 An external pointer session handle.

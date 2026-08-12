@@ -1,7 +1,7 @@
 library(kitnessGpu)
 
 backend <- gpu_backend()
-stopifnot(backend %in% c("cuda", "metal", "cpu"))
+stopifnot(backend %in% c("cuda", "metal", "rocm", "cpu"))
 
 capabilities <- gpu_capabilities()
 stopifnot(identical(names(capabilities), c("cuda", "metal", "rocm", "oneapi", "cpu")))
@@ -58,13 +58,26 @@ if (!nzchar(nvidia_smi) && nzchar(xcrun)) {
 	stopifnot(identical(backend, "metal"))
 }
 
-stopifnot(identical(capabilities$rocm$status, "stub"))
-stopifnot(identical(capabilities$oneapi$status, "stub"))
+if (isTRUE(capabilities$rocm$available)) {
+	stopifnot(isTRUE(capabilities$rocm$compiled))
+	stopifnot(identical(backend, "rocm"))
+	stopifnot(identical(gpu_roundtrip(cpu_values, backend = "rocm"), cpu_values))
 
-rocm_todo <- gpu_backend_todo("rocm")
-stopifnot(identical(rocm_todo$backend, "rocm"))
-stopifnot(identical(rocm_todo$supported, FALSE))
-stopifnot(all(c("initialize", "allocate", "copy", "stream", "launch", "error") %in% rocm_todo$interfaces))
+	session <- gpu_session_open("rocm")
+	stopifnot(inherits(session, "kitness_gpu_session"))
+	stopifnot(identical(gpu_session_backend(session), "rocm"))
+	stopifnot(identical(gpu_roundtrip(cpu_values, session = session), cpu_values))
+	gpu_session_close(session)
+	error <- tryCatch(
+		gpu_roundtrip(cpu_values, session = session),
+		error = conditionMessage
+	)
+	stopifnot(grepl("ROCM session is closed", error, fixed = TRUE))
+} else {
+	stopifnot(identical(capabilities$rocm$status, "unavailable"))
+}
+
+stopifnot(identical(capabilities$oneapi$status, "stub"))
 
 oneapi_todo <- gpu_backend_todo("oneapi")
 stopifnot(identical(oneapi_todo$backend, "oneapi"))

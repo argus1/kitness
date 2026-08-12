@@ -20,6 +20,6 @@ Description: Provides a small R-facing interface for probing GPU backend
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: false
-SystemRequirements: CUDA Toolkit (optional, 11.6 or later)
+SystemRequirements: CUDA Toolkit (optional, 11.6 or later), ROCm/HIP (optional)
 Depends:
     R (>= 4.3.3)

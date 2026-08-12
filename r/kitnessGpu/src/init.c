@@ -8,6 +8,12 @@ extern SEXP kitness_cuda_compiled(void);
 extern SEXP kitness_cuda_session_create(void);
 extern SEXP kitness_cuda_session_destroy(SEXP session);
 extern SEXP kitness_cuda_session_is_active(SEXP session);
+extern SEXP kitness_rocm_roundtrip(SEXP values);
+extern SEXP kitness_rocm_roundtrip_with_session(SEXP values, SEXP session);
+extern SEXP kitness_rocm_compiled(void);
+extern SEXP kitness_rocm_session_create(void);
+extern SEXP kitness_rocm_session_destroy(SEXP session);
+extern SEXP kitness_rocm_session_is_active(SEXP session);
 
 static const R_CallMethodDef call_methods[] = {
     {"kitness_cuda_roundtrip", (DL_FUNC) &kitness_cuda_roundtrip, 1},
@@ -16,6 +22,12 @@ static const R_CallMethodDef call_methods[] = {
     {"kitness_cuda_session_create", (DL_FUNC) &kitness_cuda_session_create, 0},
     {"kitness_cuda_session_destroy", (DL_FUNC) &kitness_cuda_session_destroy, 1},
     {"kitness_cuda_session_is_active", (DL_FUNC) &kitness_cuda_session_is_active, 1},
+    {"kitness_rocm_roundtrip", (DL_FUNC) &kitness_rocm_roundtrip, 1},
+    {"kitness_rocm_roundtrip_with_session", (DL_FUNC) &kitness_rocm_roundtrip_with_session, 2},
+    {"kitness_rocm_compiled", (DL_FUNC) &kitness_rocm_compiled, 0},
+    {"kitness_rocm_session_create", (DL_FUNC) &kitness_rocm_session_create, 0},
+    {"kitness_rocm_session_destroy", (DL_FUNC) &kitness_rocm_session_destroy, 1},
+    {"kitness_rocm_session_is_active", (DL_FUNC) &kitness_rocm_session_is_active, 1},
     {NULL, NULL, 0}
 };
 

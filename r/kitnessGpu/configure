@@ -5,6 +5,9 @@ set -eu
 srcdir="${srcdir:-.}"
 makevars="${srcdir}/src/Makevars"
 nvcc="${NVCC:-$(command -v nvcc 2>/dev/null || true)}"
+hipcc="${HIPCC:-$(command -v hipcc 2>/dev/null || true)}"
+objects="init.o"
+pkg_libs=""
 
 if test -n "${nvcc}"; then
     cuda_home="${CUDA_HOME:-$(CDPATH= cd -- "$(dirname "${nvcc}")/.." && pwd)}"
@@ -13,22 +16,37 @@ if test -n "${nvcc}"; then
     if test -n "${cuda_host_cxx}"; then
         host_flag="-ccbin ${cuda_host_cxx}"
     fi
+    objects="${objects} cuda_bridge.o"
+    pkg_libs="${pkg_libs} -L${cuda_home}/lib -Wl,-rpath,${cuda_home}/lib -lcudart"
+    cuda_rule="cuda_bridge.o: cuda_bridge.cu
+	${nvcc} ${host_flag} -std=c++14 -Xcompiler -fPIC \$(R_XTRA_CPPFLAGS) -I\$(R_INCLUDE_DIR) -c \$< -o \$@"
+    echo "configure: CUDA bridge enabled with ${nvcc}"
+else
+    objects="${objects} cuda_stub.o"
+    cuda_rule=""
+    echo "configure: nvcc not found; building CUDA-unavailable stub"
+fi
 
-    cat > "${makevars}" <<EOF
-OBJECTS = init.o cuda_bridge.o
-PKG_LIBS = -L${cuda_home}/lib -Wl,-rpath,${cuda_home}/lib -lcudart
-NVCC = ${nvcc}
-NVCCFLAGS = ${host_flag} -std=c++14 -Xcompiler -fPIC
+if test -n "${hipcc}"; then
+    hipcc_path="$(readlink -f "${hipcc}")"
+    rocm_home="${ROCM_HOME:-$(CDPATH= cd -- "$(dirname "${hipcc_path}")/.." && pwd)}"
+    objects="${objects} rocm_bridge.o"
+    pkg_libs="${pkg_libs} -L${rocm_home}/lib -Wl,-rpath,${rocm_home}/lib -lamdhip64"
+    rocm_rule="rocm_bridge.o: rocm_bridge.cpp
+	${hipcc} -std=c++14 -fPIC \$(R_XTRA_CPPFLAGS) -I\$(R_INCLUDE_DIR) -c \$< -o \$@"
+    echo "configure: ROCm bridge enabled with ${hipcc}"
+else
+    objects="${objects} rocm_stub.o"
+    rocm_rule=""
+    echo "configure: hipcc not found; building ROCm-unavailable stub"
+fi
+
+cat > "${makevars}" <<EOF
+OBJECTS = ${objects}
+PKG_LIBS =${pkg_libs}
 
 all: \$(SHLIB)
 
-cuda_bridge.o: cuda_bridge.cu
-	\$(NVCC) \$(NVCCFLAGS) \$(R_XTRA_CPPFLAGS) -I\$(R_INCLUDE_DIR) -c \$< -o \$@
+${cuda_rule}
+${rocm_rule}
 EOF
-    echo "configure: CUDA bridge enabled with ${nvcc}"
-else
-    cat > "${makevars}" <<'EOF'
-OBJECTS = init.o cuda_stub.o
-EOF
-    echo "configure: nvcc not found; building CUDA-unavailable stub"
-fi

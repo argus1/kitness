@@ -13,8 +13,12 @@ gpu_capabilities <- function() {
         PACKAGE = "kitnessGpu"
     ))
     metal <- .probe_backend_command("xcrun", c("-f", "metal"))
-
     hipcc <- Sys.which("hipcc")
+    rocm <- .probe_backend_command("rocminfo")
+    rocm_compiled <- isTRUE(.Call(
+        "kitness_rocm_compiled",
+        PACKAGE = "kitnessGpu"
+    ))
     dpcpp <- Sys.which("dpcpp")
 
     list(
@@ -37,12 +41,17 @@ gpu_capabilities <- function() {
         ),
         rocm = list(
             backend = "rocm",
-            available = FALSE,
-            status = "stub",
-            detail = if (nzchar(hipcc)) {
-                sprintf("hipcc detected at %s (execution unavailable in Sprint 1)", hipcc)
+            available = rocm$available && rocm_compiled,
+            compiled = rocm_compiled,
+            status = if (rocm$available && rocm_compiled) "available" else "unavailable",
+            detail = if (!rocm_compiled) {
+                "ROCm runtime detected but native bridge was not compiled"
+            } else if (rocm$available) {
+                rocm$detail
+            } else if (nzchar(hipcc)) {
+                sprintf("hipcc detected at %s; %s", hipcc, rocm$detail)
             } else {
-                "hipcc not found (execution unavailable in Sprint 1)"
+                "hipcc not found"
             }
         ),
         oneapi = list(
@@ -80,6 +89,9 @@ gpu_backend <- function() {
     if (isTRUE(capabilities$metal$available)) {
         return("metal")
     }
+    if (isTRUE(capabilities$rocm$available)) {
+        return("rocm")
+    }
     "cpu"
 }
 
@@ -91,7 +103,7 @@ gpu_backend <- function() {
 #' @param values A numeric vector.
 #' @param session Optional backend session object created with
 #'   [gpu_session_open()].
-#' @param backend Backend identifier. `"cuda"` and `"cpu"` are implemented.
+#' @param backend Backend identifier. `"cuda"`, `"rocm"`, and `"cpu"` are implemented.
 #' @return A numeric vector containing the copied values.
 #' @export
 gpu_roundtrip <- function(values, session = NULL, backend = gpu_backend()) {
@@ -104,10 +116,20 @@ gpu_roundtrip <- function(values, session = NULL, backend = gpu_backend()) {
         if (!inherits(session, "kitness_gpu_session")) {
             stop("`session` must be a kitness_gpu_session", call. = FALSE)
         }
-        if (!isTRUE(.Call("kitness_cuda_session_is_active", session, PACKAGE = "kitnessGpu"))) {
-            stop("CUDA session is closed", call. = FALSE)
+        session_backend <- gpu_session_backend(session)
+        if (identical(session_backend, "cuda")) {
+            active <- isTRUE(.Call("kitness_cuda_session_is_active", session, PACKAGE = "kitnessGpu"))
+            roundtrip <- "kitness_cuda_roundtrip_with_session"
+        } else if (identical(session_backend, "rocm")) {
+            active <- isTRUE(.Call("kitness_rocm_session_is_active", session, PACKAGE = "kitnessGpu"))
+            roundtrip <- "kitness_rocm_roundtrip_with_session"
+        } else {
+            stop(sprintf("Backend '%s' does not support sessions", session_backend), call. = FALSE)
         }
-        return(.Call("kitness_cuda_roundtrip_with_session", values, session, PACKAGE = "kitnessGpu"))
+        if (!active) {
+            stop(sprintf("%s session is closed", toupper(session_backend)), call. = FALSE)
+        }
+        return(.Call(roundtrip, values, session, PACKAGE = "kitnessGpu"))
     }
 
     if (identical(backend, "cpu")) {
@@ -115,6 +137,9 @@ gpu_roundtrip <- function(values, session = NULL, backend = gpu_backend()) {
     }
     if (identical(backend, "cuda")) {
         return(.Call("kitness_cuda_roundtrip", values, PACKAGE = "kitnessGpu"))
+    }
+    if (identical(backend, "rocm")) {
+        return(.Call("kitness_rocm_roundtrip", values, PACKAGE = "kitnessGpu"))
     }
     if (identical(backend, "metal")) {
         stop(
@@ -131,16 +156,17 @@ gpu_roundtrip <- function(values, session = NULL, backend = gpu_backend()) {
 #' Creates a backend-owned session represented as an external pointer with a
 #' registered finalizer.
 #'
-#' @param backend Backend identifier. Currently only `"cuda"` is implemented.
+#' @param backend Backend identifier. `"cuda"` and `"rocm"` are implemented.
 #' @return An external pointer session handle.
 #' @export
 gpu_session_open <- function(backend = gpu_backend()) {
-    if (!identical(backend, "cuda")) {
+    if (!backend %in% c("cuda", "rocm")) {
         stop(sprintf("Backend '%s' does not support sessions", backend), call. = FALSE)
     }
 
-    session <- .Call("kitness_cuda_session_create", PACKAGE = "kitnessGpu")
-    attr(session, "backend") <- "cuda"
+    create <- if (identical(backend, "cuda")) "kitness_cuda_session_create" else "kitness_rocm_session_create"
+    session <- .Call(create, PACKAGE = "kitnessGpu")
+    attr(session, "backend") <- backend
     class(session) <- c("kitness_gpu_session", class(session))
     reg.finalizer(session, .cuda_session_finalizer, onexit = TRUE)
     session
@@ -156,7 +182,9 @@ gpu_session_close <- function(session) {
         stop("`session` must be a kitness_gpu_session", call. = FALSE)
     }
 
-    .Call("kitness_cuda_session_destroy", session, PACKAGE = "kitnessGpu")
+    backend <- gpu_session_backend(session)
+    destroy <- if (identical(backend, "cuda")) "kitness_cuda_session_destroy" else "kitness_rocm_session_destroy"
+    .Call(destroy, session, PACKAGE = "kitnessGpu")
     invisible(TRUE)
 }
 
@@ -173,7 +201,11 @@ gpu_session_backend <- function(session) {
 }
 
 .cuda_session_finalizer <- function(session) {
-    .Call("kitness_cuda_session_destroy", session, PACKAGE = "kitnessGpu")
+    if (identical(gpu_session_backend(session), "cuda")) {
+        .Call("kitness_cuda_session_destroy", session, PACKAGE = "kitnessGpu")
+    } else if (identical(gpu_session_backend(session), "rocm")) {
+        .Call("kitness_rocm_session_destroy", session, PACKAGE = "kitnessGpu")
+    }
     invisible(NULL)
 }
 

@@ -10,7 +10,7 @@ Install the package from the repository root, then query the available backend:
 ```r
 install.packages("r/kitnessGpu", repos = NULL, type = "source")
 kitnessGpu::gpu_backend()
-#> [1] "cuda" | "metal" | "cpu"
+#> [1] "cuda" | "metal" | "rocm" | "cpu"
 
 kitnessGpu::gpu_capabilities()
 #> $cuda
@@ -19,13 +19,11 @@ kitnessGpu::gpu_capabilities()
 #> $oneapi
 ```
 
-Selection priority is `cuda` first, then `metal`, then `unavailable`.
+Selection priority is `cuda` first, then `metal`, then `rocm`, then `cpu` fallback.
 
-Selection priority is `cuda` first, then `metal`, then `cpu` fallback.
-
-`rocm` and `oneapi` are currently documented stubs to preserve a backend-neutral
-public contract while their native bridges and integration tests are pending.
-
+When `hipcc` is available at installation and `rocminfo` can access an AMD GPU,
+the ROCm bridge provides device-memory round trips and stream-backed sessions.
+`oneapi` remains a documented stub.
 ## CUDA native bridge
 
 When `nvcc` is available during installation, the package builds a registered
