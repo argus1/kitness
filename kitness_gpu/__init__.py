@@ -3,7 +3,18 @@
 from __future__ import annotations
 
 import subprocess
+from dataclasses import dataclass
 from shutil import which
+from typing import Any, Optional
+
+
+@dataclass(frozen=True)
+class KernelDescriptor:
+    """Describe a user-supplied compute kernel for backend dispatch."""
+
+    name: str
+    source: str
+    backend: Optional[str] = None
 
 
 def _probe_command(command: list[str]) -> tuple[bool, str]:
@@ -64,3 +75,23 @@ def select_backend() -> str:
     if capabilities["metal"]["available"]:
         return "metal"
     return "unavailable"
+
+
+def dispatch_kernel(descriptor: KernelDescriptor, **kwargs: Any) -> Any:
+    """Route a user-supplied kernel to its requested or selected backend."""
+    if not isinstance(descriptor, KernelDescriptor):
+        raise TypeError("descriptor must be a KernelDescriptor")
+
+    capabilities = backend_capabilities()
+    backend = descriptor.backend or select_backend()
+
+    if backend == "unavailable" or backend not in capabilities:
+        raise RuntimeError(f"{backend} backend is unavailable")
+    if not capabilities[backend]["available"]:
+        raise RuntimeError(
+            f"{backend} backend is unavailable: {capabilities[backend]['detail']}"
+        )
+
+    raise NotImplementedError(
+        f"Custom kernel execution for the {backend} backend is not implemented"
+    )

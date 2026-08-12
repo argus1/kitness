@@ -1,7 +1,12 @@
 import shutil
 import unittest
 
-from kitness_gpu import backend_capabilities, select_backend
+from kitness_gpu import (
+    KernelDescriptor,
+    backend_capabilities,
+    dispatch_kernel,
+    select_backend,
+)
 
 
 class BackendSelectionTests(unittest.TestCase):
@@ -27,6 +32,16 @@ class BackendSelectionTests(unittest.TestCase):
         self.assertEqual(capabilities["rocm"]["status"], "stub")
         self.assertFalse(capabilities["oneapi"]["available"])
         self.assertEqual(capabilities["oneapi"]["status"], "stub")
+
+    def test_dispatch_rejects_descriptor_for_unavailable_backend(self):
+        descriptor = KernelDescriptor(
+            name="custom_add",
+            source="kernel void custom_add() {}",
+            backend="oneapi",
+        )
+
+        with self.assertRaisesRegex(RuntimeError, "oneapi.*unavailable"):
+            dispatch_kernel(descriptor)
 
 
 if __name__ == "__main__":
