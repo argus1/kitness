@@ -21,6 +21,12 @@ kitnessGpu::gpu_capabilities()
 
 Selection priority is `cuda` first, then `metal`, then `rocm`, then `cpu` fallback.
 
+On macOS, installation detects `xcrun`, compiles the MSL source in
+`inst/metal/vector_add.metal` to `kitness.metallib`, and links the Objective-C++
+bridge against `Foundation.framework` and `Metal.framework`. The installed
+Metal resource is loaded explicitly by `gpu_roundtrip(..., backend = "metal")`.
+On other platforms, the Metal entry points remain unavailable stubs.
+
 When `hipcc` is available at installation and `rocminfo` can access an AMD GPU,
 the ROCm bridge provides device-memory round trips and stream-backed sessions.
 `oneapi` remains a documented stub.
@@ -51,6 +57,13 @@ R CMD INSTALL r/kitnessGpu
 Without `nvcc`, the package installs a native unavailable-backend stub. In that
 build, `gpu_capabilities()$cuda$compiled` is `FALSE`, CUDA is not selected, and
 `gpu_roundtrip(..., backend = "cuda")` raises an actionable R error.
+
+The CUDA and Metal bridges keep backend-owned allocations and execution state
+behind the native boundary. CUDA owns device buffers and streams; Metal owns
+buffers, command queues, command buffers, and synchronization. Both bridges
+validate host inputs, synchronize before returning host results, release native
+resources on each operation or session close, and translate backend failures to
+R errors without exposing native handles through the public API.
 
 On Windows, `configure.win` applies the same conditional rule so package
 installation retains a CPU-only path when `nvcc` is unavailable.

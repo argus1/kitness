@@ -1,1 +1,1 @@
-OBJECTS = init.o cuda_stub.o
+OBJECTS = init.o cuda_stub.o metal_stub.o

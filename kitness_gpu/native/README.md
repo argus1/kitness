@@ -32,3 +32,12 @@ The build places both native artifacts in `kitness_gpu/native/build/`:
 Bindings should resolve their installed resource directory and pass the full
 path to `kitness.metallib`; they should not depend on the process working
 directory.
+
+## Buffer and command-buffer synchronization
+
+The bridge selects `MTLResourceStorageModeShared` on unified-memory devices,
+including Apple Silicon, so CPU and GPU access the same allocation without a
+separate transfer. On devices without unified memory it uses managed buffers,
+marks host-written inputs with `didModifyRange:`, and encodes a blit
+`synchronizeResource:` for the output before waiting for completion. Output is
+copied only after the command buffer reports a completed status.

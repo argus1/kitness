@@ -8,6 +8,15 @@ nvcc="${NVCC:-$(command -v nvcc 2>/dev/null || true)}"
 hipcc="${HIPCC:-$(command -v hipcc 2>/dev/null || true)}"
 objects="init.o"
 pkg_libs=""
+cuda_rule=""
+rocm_rule=""
+metal_rules=""
+metal_target=""
+
+metal_available=""
+if test "$(uname -s)" = "Darwin" && command -v xcrun >/dev/null 2>&1 && xcrun --sdk macosx -f metal >/dev/null 2>&1; then
+    metal_available="yes"
+fi
 
 if test -n "${nvcc}"; then
     cuda_home="${CUDA_HOME:-$(CDPATH= cd -- "$(dirname "${nvcc}")/.." && pwd)}"
@@ -23,13 +32,11 @@ if test -n "${nvcc}"; then
     echo "configure: CUDA bridge enabled with ${nvcc}"
 else
     objects="${objects} cuda_stub.o"
-    cuda_rule=""
     echo "configure: nvcc not found; building CUDA-unavailable stub"
 fi
 
 if test -n "${hipcc}"; then
-    hipcc_path="$(readlink -f "${hipcc}")"
-    rocm_home="${ROCM_HOME:-$(CDPATH= cd -- "$(dirname "${hipcc_path}")/.." && pwd)}"
+    rocm_home="${ROCM_HOME:-$(CDPATH= cd -- "$(dirname "${hipcc}")/.." && pwd)}"
     objects="${objects} rocm_bridge.o"
     pkg_libs="${pkg_libs} -L${rocm_home}/lib -Wl,-rpath,${rocm_home}/lib -lamdhip64"
     rocm_rule="rocm_bridge.o: rocm_bridge.cpp
@@ -37,16 +44,38 @@ if test -n "${hipcc}"; then
     echo "configure: ROCm bridge enabled with ${hipcc}"
 else
     objects="${objects} rocm_stub.o"
-    rocm_rule=""
     echo "configure: hipcc not found; building ROCm-unavailable stub"
+fi
+
+if test -n "${metal_available}"; then
+    objects="${objects} metal_bridge_m.o"
+    pkg_libs="${pkg_libs} -framework Foundation -framework Metal"
+    metal_target=" \$(METAL_LIBRARY)"
+    metal_rules='METAL = xcrun --sdk macosx metal
+METALLIB = xcrun --sdk macosx metallib
+METAL_LIBRARY = ../inst/metal/kitness.metallib
+
+metal_bridge_m.o: metal_bridge.mm metal_bridge.h
+	$(CXX) $(ALL_CPPFLAGS) $(ALL_CXXFLAGS) -fobjc-arc -c $< -o $@
+
+../inst/metal/vector_add.air: ../inst/metal/vector_add.metal
+	$(METAL) -c $< -o $@
+
+$(METAL_LIBRARY): ../inst/metal/vector_add.air
+	$(METALLIB) $< -o $@'
+    echo "configure: Metal bridge enabled with xcrun"
+else
+    objects="${objects} metal_stub.o"
+    echo "configure: xcrun metal toolchain not found; building Metal-unavailable stub"
 fi
 
 cat > "${makevars}" <<EOF
 OBJECTS = ${objects}
 PKG_LIBS =${pkg_libs}
 
-all: \$(SHLIB)
+all: \$(SHLIB)${metal_target}
 
 ${cuda_rule}
 ${rocm_rule}
+${metal_rules}
 EOF

@@ -13,6 +13,10 @@ gpu_capabilities <- function() {
         PACKAGE = "kitnessGpu"
     ))
     metal <- .probe_backend_command("xcrun", c("-f", "metal"))
+    metal_compiled <- isTRUE(.Call(
+        "kitness_metal_compiled",
+        PACKAGE = "kitnessGpu"
+    ))
     hipcc <- Sys.which("hipcc")
     rocm <- .probe_backend_command("rocminfo")
     rocm_compiled <- isTRUE(.Call(
@@ -35,9 +39,10 @@ gpu_capabilities <- function() {
         ),
         metal = list(
             backend = "metal",
-            available = metal$available,
-            status = if (metal$available) "available" else "unavailable",
-            detail = metal$detail
+            available = metal$available && metal_compiled,
+            compiled = metal_compiled,
+            status = if (metal$available && metal_compiled) "available" else "unavailable",
+            detail = if (!metal_compiled) "Metal bridge was not compiled" else metal$detail
         ),
         rocm = list(
             backend = "rocm",
@@ -103,7 +108,8 @@ gpu_backend <- function() {
 #' @param values A numeric vector.
 #' @param session Optional backend session object created with
 #'   [gpu_session_open()].
-#' @param backend Backend identifier. `"cuda"`, `"rocm"`, and `"cpu"` are implemented.
+#' @param backend Backend identifier. `"cuda"`, `"metal"` on macOS,
+#'   `"rocm"`, and `"cpu"` are implemented.
 #' @return A numeric vector containing the copied values.
 #' @export
 gpu_roundtrip <- function(values, session = NULL, backend = gpu_backend()) {
@@ -142,10 +148,14 @@ gpu_roundtrip <- function(values, session = NULL, backend = gpu_backend()) {
         return(.Call("kitness_rocm_roundtrip", values, PACKAGE = "kitnessGpu"))
     }
     if (identical(backend, "metal")) {
-        stop(
-            "Metal backend is unavailable: this R package has no Metal bridge; use backend = 'cpu' or install a build with Metal support",
-            call. = FALSE
-        )
+        if (!isTRUE(.Call("kitness_metal_compiled", PACKAGE = "kitnessGpu"))) {
+            stop("Metal backend is unavailable: install on macOS with the Metal toolchain", call. = FALSE)
+        }
+        metallib_path <- system.file("metal", "kitness.metallib", package = "kitnessGpu")
+        if (!nzchar(metallib_path)) {
+            stop("Metal shader library is missing from the installed package", call. = FALSE)
+        }
+        return(.Call("kitness_metal_roundtrip", values, metallib_path, PACKAGE = "kitnessGpu"))
     }
 
     stop(sprintf("GPU backend '%s' does not support round trips", backend), call. = FALSE)
