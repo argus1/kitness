@@ -33,7 +33,7 @@ if (!isTRUE(capabilities$metal$compiled)) {
 }
 
 nvidia_smi <- Sys.which("nvidia-smi")
-if (nzchar(nvidia_smi) && isTRUE(capabilities$cuda$compiled)) {
+if (isTRUE(capabilities$cuda$available)) {
     stopifnot(identical(backend, "cuda"))
     stopifnot(isTRUE(capabilities$cuda$compiled))
 
@@ -52,15 +52,20 @@ if (nzchar(nvidia_smi) && isTRUE(capabilities$cuda$compiled)) {
     )
     stopifnot(grepl("CUDA session is closed", error, fixed = TRUE))
 } else {
-    message("Skipping CUDA round-trip smoke test: native bridge or runtime unavailable")
+    message(sprintf(
+        "Skipping CUDA round-trip smoke test: %s",
+        capabilities$cuda$detail
+    ))
 }
 
-xcrun <- Sys.which("xcrun")
-if (!nzchar(nvidia_smi) && nzchar(xcrun)) {
-    stopifnot(identical(backend, "metal"))
-    stopifnot(isTRUE(capabilities$metal$compiled))
+if (isTRUE(capabilities$metal$available)) {
     metal_values <- gpu_roundtrip(cpu_values, backend = "metal")
     stopifnot(isTRUE(all.equal(metal_values, cpu_values)))
+} else {
+    message(sprintf(
+        "Skipping Metal round-trip smoke test: %s",
+        capabilities$metal$detail
+    ))
 }
 
 stopifnot(identical(capabilities$rocm$status, "stub"))

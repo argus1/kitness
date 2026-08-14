@@ -51,6 +51,11 @@ OBJECTS = init.o cuda_bridge.o metal_stub.o
 PKG_LIBS = -L${cuda_home}/lib -Wl,-rpath,${cuda_home}/lib -lcudart
 NVCC = ${nvcc}
 NVCCFLAGS = -std=c++14 -Xcompiler -fPIC
+
+all: \$(SHLIB)
+
+cuda_bridge.o: cuda_bridge.cu
+	\$(NVCC) \$(NVCCFLAGS) \$(R_XTRA_CPPFLAGS) -I\$(R_INCLUDE_DIR) -c \$< -o \$@
 EOF
     echo "configure: CUDA bridge enabled; Metal toolchain unavailable"
 elif test -n "${metal_available}"; then
