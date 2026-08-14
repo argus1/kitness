@@ -19,9 +19,13 @@ kitnessGpu::gpu_capabilities()
 #> $oneapi
 ```
 
-Selection priority is `cuda` first, then `metal`, then `unavailable`.
-
 Selection priority is `cuda` first, then `metal`, then `cpu` fallback.
+
+On macOS, installation detects `xcrun`, compiles the MSL source in
+`inst/metal/vector_add.metal` to `kitness.metallib`, and links the Objective-C++
+bridge against `Foundation.framework` and `Metal.framework`. The installed
+Metal resource is loaded explicitly by `gpu_roundtrip(..., backend = "metal")`.
+On other platforms, the Metal entry points remain unavailable stubs.
 
 `rocm` and `oneapi` are currently documented stubs to preserve a backend-neutral
 public contract while their native bridges and integration tests are pending.

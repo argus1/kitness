@@ -10,7 +10,7 @@ if test -n "${nvcc}"; then
     cuda_home="${CUDA_HOME:-$(CDPATH= cd -- "$(dirname "${nvcc}")/.." && pwd)}"
 
     cat > "${makevars}" <<EOF
-OBJECTS = init.o cuda_bridge.o
+OBJECTS = init.o cuda_bridge.o metal_stub.o
 PKG_LIBS = -L${cuda_home}/lib/x64 -lcudart
 NVCC = ${nvcc}
 NVCCFLAGS = -std=c++14 -Xcompiler -MD
@@ -23,7 +23,7 @@ EOF
     echo "configure.win: CUDA bridge enabled with ${nvcc}"
 else
     cat > "${makevars}" <<'EOF'
-OBJECTS = init.o cuda_stub.o
+OBJECTS = init.o cuda_stub.o metal_stub.o
 EOF
     echo "configure.win: nvcc not found; building CUDA-unavailable stub"
 fi

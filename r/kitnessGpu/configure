@@ -6,7 +6,12 @@ srcdir="${srcdir:-.}"
 makevars="${srcdir}/src/Makevars"
 nvcc="${NVCC:-$(command -v nvcc 2>/dev/null || true)}"
 
-if test -n "${nvcc}"; then
+metal_available=""
+if test "$(uname -s)" = "Darwin" && command -v xcrun >/dev/null 2>&1 && xcrun --sdk macosx -f metal >/dev/null 2>&1; then
+    metal_available="yes"
+fi
+
+if test -n "${nvcc}" && test -n "${metal_available}"; then
     cuda_home="${CUDA_HOME:-$(CDPATH= cd -- "$(dirname "${nvcc}")/.." && pwd)}"
     cuda_host_cxx="${CUDA_HOST_CXX:-}"
     host_flag=""
@@ -15,20 +20,62 @@ if test -n "${nvcc}"; then
     fi
 
     cat > "${makevars}" <<EOF
-OBJECTS = init.o cuda_bridge.o
+OBJECTS = init.o cuda_bridge.o metal_bridge_m.o
 PKG_LIBS = -L${cuda_home}/lib -Wl,-rpath,${cuda_home}/lib -lcudart
+PKG_LIBS += -framework Foundation -framework Metal
 NVCC = ${nvcc}
 NVCCFLAGS = ${host_flag} -std=c++14 -Xcompiler -fPIC
+METAL = xcrun --sdk macosx metal
+METALLIB = xcrun --sdk macosx metallib
+METAL_LIBRARY = ../inst/metal/kitness.metallib
 
-all: \$(SHLIB)
+all: \$(SHLIB) \$(METAL_LIBRARY)
 
 cuda_bridge.o: cuda_bridge.cu
 	\$(NVCC) \$(NVCCFLAGS) \$(R_XTRA_CPPFLAGS) -I\$(R_INCLUDE_DIR) -c \$< -o \$@
+
+metal_bridge_m.o: metal_bridge.mm metal_bridge.h
+	\$(CXX) \$(ALL_CPPFLAGS) \$(ALL_CXXFLAGS) -fobjc-arc -c \$< -o \$@
+
+../inst/metal/vector_add.air: ../inst/metal/vector_add.metal
+	\$(METAL) -c \$< -o \$@
+
+\$(METAL_LIBRARY): ../inst/metal/vector_add.air
+	\$(METALLIB) \$< -o \$@
 EOF
-    echo "configure: CUDA bridge enabled with ${nvcc}"
+    echo "configure: CUDA and Metal bridges enabled"
+elif test -n "${nvcc}"; then
+    cuda_home="${CUDA_HOME:-$(CDPATH= cd -- "$(dirname "${nvcc}")/.." && pwd)}"
+    cat > "${makevars}" <<EOF
+OBJECTS = init.o cuda_bridge.o metal_stub.o
+PKG_LIBS = -L${cuda_home}/lib -Wl,-rpath,${cuda_home}/lib -lcudart
+NVCC = ${nvcc}
+NVCCFLAGS = -std=c++14 -Xcompiler -fPIC
+EOF
+    echo "configure: CUDA bridge enabled; Metal toolchain unavailable"
+elif test -n "${metal_available}"; then
+    cat > "${makevars}" <<'EOF'
+OBJECTS = init.o cuda_stub.o metal_bridge_m.o
+PKG_LIBS = -framework Foundation -framework Metal
+METAL = xcrun --sdk macosx metal
+METALLIB = xcrun --sdk macosx metallib
+METAL_LIBRARY = ../inst/metal/kitness.metallib
+
+all: $(SHLIB) $(METAL_LIBRARY)
+
+metal_bridge_m.o: metal_bridge.mm metal_bridge.h
+	$(CXX) $(ALL_CPPFLAGS) $(ALL_CXXFLAGS) -fobjc-arc -c $< -o $@
+
+../inst/metal/vector_add.air: ../inst/metal/vector_add.metal
+	$(METAL) -c $< -o $@
+
+$(METAL_LIBRARY): ../inst/metal/vector_add.air
+	$(METALLIB) $< -o $@
+EOF
+    echo "configure: Metal bridge enabled; CUDA toolkit unavailable"
 else
     cat > "${makevars}" <<'EOF'
-OBJECTS = init.o cuda_stub.o
+OBJECTS = init.o cuda_stub.o metal_stub.o
 EOF
-    echo "configure: nvcc not found; building CUDA-unavailable stub"
+    echo "configure: CUDA and Metal bridges unavailable; building stubs"
 fi
