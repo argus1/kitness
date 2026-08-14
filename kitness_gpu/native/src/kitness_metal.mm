@@ -66,18 +66,26 @@ int kitness_metal_vector_add(
         }
 
         const NSUInteger byte_count = count * sizeof(float);
+        const MTLResourceOptions storage_options = device.hasUnifiedMemory
+            ? MTLResourceStorageModeShared
+            : MTLResourceStorageModeManaged;
         id<MTLBuffer> left_buffer = [device newBufferWithBytes:left
                                                        length:byte_count
-                                                      options:MTLResourceStorageModeShared];
+                                                      options:storage_options];
         id<MTLBuffer> right_buffer = [device newBufferWithBytes:right
                                                         length:byte_count
-                                                       options:MTLResourceStorageModeShared];
+                                                       options:storage_options];
         id<MTLBuffer> output_buffer = [device newBufferWithLength:byte_count
-                                                          options:MTLResourceStorageModeShared];
+                                                          options:storage_options];
         id<MTLCommandQueue> queue = [device newCommandQueue];
         if (left_buffer == nil || right_buffer == nil || output_buffer == nil || queue == nil) {
             set_error(error_message, error_message_capacity, "Metal resource allocation failed");
             return KITNESS_METAL_EXECUTION_ERROR;
+        }
+
+        if (storage_options == MTLResourceStorageModeManaged) {
+            [left_buffer didModifyRange:NSMakeRange(0, byte_count)];
+            [right_buffer didModifyRange:NSMakeRange(0, byte_count)];
         }
 
         id<MTLCommandBuffer> command_buffer = [queue commandBuffer];
@@ -98,11 +106,23 @@ int kitness_metal_vector_add(
         [encoder dispatchThreads:MTLSizeMake(thread_count, 1, 1)
             threadsPerThreadgroup:MTLSizeMake(group_width, 1, 1)];
         [encoder endEncoding];
+
+        if (storage_options == MTLResourceStorageModeManaged) {
+            id<MTLBlitCommandEncoder> blit_encoder = [command_buffer blitCommandEncoder];
+            if (blit_encoder == nil) {
+                set_error(error_message, error_message_capacity, "Metal synchronization encoding failed");
+                return KITNESS_METAL_EXECUTION_ERROR;
+            }
+            [blit_encoder synchronizeResource:output_buffer];
+            [blit_encoder endEncoding];
+        }
+
         [command_buffer commit];
         [command_buffer waitUntilCompleted];
 
         if (command_buffer.status != MTLCommandBufferStatusCompleted) {
-            set_error(error_message, error_message_capacity, command_buffer.error.localizedDescription);
+            set_error(error_message, error_message_capacity,
+                      command_buffer.error.localizedDescription);
             return KITNESS_METAL_EXECUTION_ERROR;
         }
 

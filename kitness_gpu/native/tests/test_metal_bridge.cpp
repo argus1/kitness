@@ -2,11 +2,38 @@
 
 #include <cmath>
 #include <cstdio>
+#include <cstring>
+
+static int test_rejects_empty_workload() {
+    float value = 1.0F;
+    char error_message[256] = {};
+
+    const int status = kitness_metal_vector_add(
+        &value,
+        &value,
+        &value,
+        0,
+        "unused.metallib",
+        error_message,
+        sizeof(error_message));
+
+    if (status != KITNESS_METAL_INVALID_ARGUMENT ||
+        std::strcmp(error_message, "invalid Metal bridge arguments") != 0) {
+        std::fprintf(stderr, "empty workload was not rejected\n");
+        return 1;
+    }
+
+    return 0;
+}
 
 int main(int argc, char **argv) {
     if (argc != 2) {
         std::fprintf(stderr, "usage: %s /path/to/kitness.metallib\n", argv[0]);
         return 2;
+    }
+
+    if (test_rejects_empty_workload() != 0) {
+        return 1;
     }
 
     const float left[] = {1.5F, -2.0F, 0.25F};
